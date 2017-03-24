@@ -30,7 +30,7 @@ def get_env_variable(var_name, fail_on_error=True):
     return env_var
 
 
-VERSION = '0.4.30'
+VERSION = '0.4.50'
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
@@ -70,7 +70,8 @@ INSTALLED_APPS = (
     'sorl.thumbnail',
     'djrill',
     'django_markdown',
-    'markdownx',
+    'markdownx',  # flatpage advanced admin
+    'flatpage_meta',  # flatpage meta tags
     'reversion',
     'storages',
     'dbbackup',
@@ -157,7 +158,7 @@ DATABASES = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
-LANGUAGE_CODE = 'de'
+LANGUAGE_CODE = 'de-ch'
 
 TIME_ZONE = 'UTC'
 
@@ -167,6 +168,13 @@ USE_L10N = True
 
 USE_TZ = True
 
+THOUSAND_SEPARATOR = "'"
+
+USE_THOUSAND_SEPARATOR = True
+
+FORMAT_MODULE_PATH = [
+    'formats',
+]
 # -- LOGGING
 
 LOGGING = {
@@ -345,6 +353,8 @@ MARKDOWNX_MARKDOWN_EXTENSIONS = [
     'markdown.extensions.nl2br',
     'markdown.extensions.smarty',
 ]
+# crispy images pls
+MARKDOWNX_IMAGE_MAX_SIZE = {'size': (900, 900), 'quality': 100}
 
 # Media path
 # Path, where images will be stored in MEDIA_ROOT folder
@@ -368,6 +378,8 @@ TEST_WEBDRIVER_PAGE_LOAD_TIMEOUT = 5
 TEST_CHROMEDRIVER_EXECUTABLE = os.environ.get(
     'DJANGO_TEST_CHROMEDRIVER_EXECUTABLE', './chromedriver')
 
+# THUMBS
+THUMBNAIL_PRESERVE_FORMAT = True
 
 # django-dbbackup
 DROPBOX_ROOT_PATH = get_env_variable('DROPBOX_ROOT_PATH', fail_on_error=False)
@@ -378,17 +390,26 @@ if DROPBOX_ROOT_PATH:
         'oauth2_access_token': get_env_variable('DROPBOX_ACCESS_TOKEN'),
     }
 
+# swiss bank list download url
+SWISS_BANKS_DOWNLOAD_URL = ('https://www.six-interbank-clearing.com/dam'
+                            '/downloads/bc-bank-master/bcbankenstamm')
+
 
 # need to differentiate instances
-def backup_filename(databasename, servername, datetime, extension, content_type):
+def backup_filename(databasename, servername, datetime, extension,
+                    content_type):
     import getpass
     username = getpass.getuser()
-    return '{username}-{databasename}-{servername}-{datetime}.{extension}'.format(
-        **{'username': username, 'databasename': databasename,
-        'servername': servername, 'datetime': datetime, 'extension': extension})
+    return ('{username}-{databasename}-{servername}-{datetime}.{extension}'
+            ''.format(
+                **{'username': username, 'databasename': databasename,
+                   'servername': servername, 'datetime': datetime,
+                   'extension': extension})
+            )
 
 
-def media_backup_filename(databasename, servername, datetime, extension, content_type):
+def media_backup_filename(databasename, servername, datetime, extension,
+                          content_type):
     import getpass
     username = getpass.getuser()
     return '{username}-mediafiles-{servername}-{datetime}.{extension}'.format(

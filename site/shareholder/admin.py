@@ -1,8 +1,9 @@
 from django.contrib import admin
 from reversion.admin import VersionAdmin
 
-from shareholder.models import Shareholder, Company, Operator, Position, \
-    UserProfile, Country, OptionPlan, OptionTransaction, Security
+from shareholder.models import (Bank, Company, Country, Operator, OptionPlan,
+                                OptionTransaction, Position, Security,
+                                Shareholder, UserProfile)
 
 
 class ShareholderAdmin(VersionAdmin):
@@ -14,8 +15,12 @@ class CompanyAdmin(VersionAdmin):
     pass
 
 
+class BankAdmin(VersionAdmin):
+    pass
+
+
 class OperatorAdmin(VersionAdmin):
-    list_display = ('id', 'user', 'company', 'user', 'date_joined')
+    list_display = ('id', 'user', 'company', 'date_joined')
     list_filter = ('company',)
 
     def date_joined(selfi, obj):
@@ -51,10 +56,14 @@ class PositionAdmin(VersionAdmin):
 
 
 class UserProfileAdmin(VersionAdmin):
-    list_display = ('pk', 'street', 'street2', 'city')
+    list_display = ('user', 'full_name', 'street',
+                    'street2', 'city')
     search_fields = [
-        'user__first_name', 'user__email', 'user__last_name'
+        'user__first_name', 'user__email', 'user__last_name', 'user__username',
     ]
+
+    def full_name(self, obj):
+        return u'{} {}'.format(obj.user.first_name, obj.user.last_name)
 
 
 class CountryAdmin(VersionAdmin):
@@ -86,3 +95,4 @@ admin.site.register(Country, CountryAdmin)
 admin.site.register(Security, SecurityAdmin)
 admin.site.register(OptionPlan, OptionPlanAdmin)
 admin.site.register(OptionTransaction, OptionTransactionAdmin)
+admin.site.register(Bank, BankAdmin)

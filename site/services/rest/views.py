@@ -14,7 +14,6 @@ from rest_framework import filters
 
 from services.rest.permissions import (SafeMethodsOnlyPermission,
                                        UserCanAddCompanyPermission,
-                                       UserCanEditCompanyPermission,
                                        UserIsOperatorPermission)
 from services.rest.serializers import (AddCompanySerializer, CompanySerializer,
                                        CountrySerializer, OperatorSerializer,
@@ -28,6 +27,7 @@ from services.rest.serializers import (AddCompanySerializer, CompanySerializer,
 from shareholder.models import (Company, Country, Operator, OptionPlan,
                                 OptionTransaction, Position, Security,
                                 Shareholder)
+from utils.session import get_company_from_request
 
 User = get_user_model()
 
@@ -56,13 +56,14 @@ class ShareholderViewSet(viewsets.ModelViewSet):
             raise Http404
 
     def get_queryset(self):
-        user = self.request.user
+        """
+        user has no company selected
+        """
+        if not self.request.session.get('company_pk'):
+            return Shareholder.objects.none()
 
-        # no company setup yet
-        if not user.operator_set.first():
-          return Shareholder.objects.none()
+        company = get_company_from_request(self.request)
 
-        company = user.operator_set.first().company
         return Shareholder.objects.filter(company=company)\
             .select_related('company', 'user', 'user__userprofile') \
             .prefetch_related('user__operator_set') \
@@ -94,8 +95,8 @@ class ShareholderViewSet(viewsets.ModelViewSet):
 
     @list_route(methods=['get'])
     def company_number_segments(self, request):
-        operator = request.user.operator_set.first()
-        shareholder = operator.company.get_company_shareholder()
+        company = get_company_from_request(request)
+        shareholder = company.get_company_shareholder()
         kwargs = {}
 
         if request.GET.get('date'):
@@ -115,13 +116,11 @@ class ShareholderViewSet(viewsets.ModelViewSet):
         """
         returns the captable part for all option holders
         """
-        company_pk = self.request.GET.get('company')
+        # if user has no company yet
+        if not self.request.session.get('company_pk'):
+            return Response(Shareholder.objects.none())
 
-        if company_pk:
-            company = Company.objects.get(pk=company_pk,
-                                          operator__user=self.request.user)
-        else:
-            company = self.request.user.operator_set.first().company
+        company = Company.objects.get(pk=self.request.session.get('company_pk'))
 
         ohs = company.get_active_option_holders()
         ohs = self.filter_queryset(ohs)
@@ -152,8 +151,8 @@ class OperatorViewSet(viewsets.ModelViewSet):
             raise Http404
 
     def get_queryset(self):
-        user = self.request.user
-        return Operator.objects.filter(company__operator__user=user)\
+        company = get_company_from_request(self.request)
+        return Operator.objects.filter(company=company)\
             .distinct()
 
     def destroy(self, request, pk=None):
@@ -215,7 +214,10 @@ class AddCompanyView(APIView):
     def post(self, request, format=None):
         serializer = AddCompanySerializer(data=request.data)
         if serializer.is_valid() and request.user.is_authenticated():
-            serializer.save(user=request.user)
+            company = serializer.save(user=request.user)
+            # once user added a company save it to the session to allow
+            # multi company handling for single user
+            request.session['company_pk'] = company.pk
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -249,7 +251,7 @@ class AddShareSplit(APIView):
         is_valid, errors = self._validate_data(data)
         if is_valid:
             # get company and run company.split_shares(data)
-            company = request.user.operator_set.earliest('id').company
+            company = get_company_from_request(request)
             data.update({
                 'execute_at': dateutil.parser.parse(data['execute_at']),
                 'security': Security.objects.get(id=data['security']['pk'])
@@ -367,10 +369,10 @@ class PositionViewSet(viewsets.ModelViewSet):
                        'seller__user__email', 'seller__number')
 
     def get_queryset(self):
-        user = self.request.user
+        company = get_company_from_request(self.request)
         return Position.objects.filter(
-            Q(buyer__company__operator__user=user) |
-            Q(seller__company__operator__user=user)
+            Q(buyer__company=company) |
+            Q(seller__company=company)
         ).distinct().order_by('-bought_at', '-pk')
 
     @detail_route(
@@ -407,9 +409,8 @@ class SecurityViewSet(viewsets.ModelViewSet):
     ]
 
     def get_queryset(self):
-        user = self.request.user
-        if user.is_authenticated():
-            return Security.objects.filter(company__operator__user=user)
+        company = get_company_from_request(self.request)
+        return Security.objects.filter(company=company)
 
 
 class OptionPlanViewSet(viewsets.ModelViewSet):
@@ -420,8 +421,8 @@ class OptionPlanViewSet(viewsets.ModelViewSet):
     ]
 
     def get_queryset(self):
-        user = self.request.user
-        return OptionPlan.objects.filter(company__operator__user=user)
+        company = get_company_from_request(self.request)
+        return OptionPlan.objects.filter(company=company)
 
     # FIXME add perms like that to decor. permission_classes=[IsAdminOrIsSelf]
     @detail_route(methods=['post'])
@@ -467,9 +468,9 @@ class OptionTransactionViewSet(viewsets.ModelViewSet):
     ordering = ('option_plan__pk', '-bought_at')
 
     def get_queryset(self):
-        user = self.request.user
+        company = get_company_from_request(self.request)
         qs = OptionTransaction.objects.filter(
-            option_plan__company__operator__user=user
+            option_plan__company=company
         )
 
         # filter if option plan is given in query params

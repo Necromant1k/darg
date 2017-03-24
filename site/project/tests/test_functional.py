@@ -65,6 +65,7 @@ class StartFunctionalTestCase(BaseSeleniumTestCase):
 
         try:
             for op in ops:
+                CompanyShareholderGenerator().generate(company=op.company)
                 start = page.StartPage(
                     self.selenium, self.live_server_url, op.user)
                 # wait for list
@@ -173,6 +174,7 @@ class StartFunctionalTestCase(BaseSeleniumTestCase):
         add shareholder without email
         """
         op = OperatorGenerator().generate()
+        CompanyShareholderGenerator().generate(company=op.company)
         user = UserGenerator().generate()
         user.email = None
 
@@ -262,7 +264,7 @@ class StartFunctionalTestCase(BaseSeleniumTestCase):
                 self.assertEqual(row.find_element_by_class_name('number').text,
                                  shareholder.number)
                 self.assertEqual(row.find_element_by_class_name('share').text,
-                                 u'6 (6,0%)')
+                                 u'6 (6.00%)')
                 self.assertEqual(
                     row.find_element_by_class_name('full-name').text,
                     shareholder.get_full_name())
@@ -316,9 +318,12 @@ class StartFunctionalTestCase(BaseSeleniumTestCase):
             start.enter_search_term(shs[0].user.last_name)
             time.sleep(1)
             start.click_search()
+            start.refresh()
+            time.sleep(2)
             start.enter_search_term(shs[0].user.last_name)
             time.sleep(1)
             start.click_search()
+            time.sleep(1)
             self.assertEqual(start.has_shareholder_count(), 1)
 
             # paginate

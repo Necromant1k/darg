@@ -44,7 +44,7 @@ class AddCompanyTestCase(APITestCase):
             "name": "Pariatur Rerum est voluptates ipsa in officia libero "
                     "soluta omnis saepe voluptates omnis quidem autem veniam "
                     "rerum molestiae incidunt",
-            "count": 36,
+            "share_count": 36,
             "face_value": 18,
             "founded_at": "2016-05-31T23:00:00.000Z"
         }
@@ -55,6 +55,7 @@ class AddCompanyTestCase(APITestCase):
         self.assertEqual(res.status_code, 201)
         company = user.operator_set.all()[0].company
         self.assertEqual(company.security_set.all()[0].title, 'C')
+        self.assertIsNotNone(self.client.session.get('company_pk'))
 
     def test_add_company_saving_twice(self):
         """
@@ -66,7 +67,7 @@ class AddCompanyTestCase(APITestCase):
             "name": "Pariatur Rerum est voluptates ipsa in officia libero "
                     "soluta omnis saepe voluptates omnis quidem autem veniam "
                     "rerum molestiae incidunt",
-            "count": 36,
+            "share_count": 36,
             "face_value": 18,
             "founded_at": "2016-05-31T23:00:00.000Z"
         }
@@ -302,6 +303,8 @@ class PositionTestCase(MoreAssertsTestCaseMixin, TestCase):
         seller = ShareholderGenerator().generate(company=operator.company)
         securities = TwoInitialSecuritiesGenerator().generate(
             company=operator.company)
+        position = PositionGenerator().generate(
+            seller=None, security=securities[1], buyer=seller)
 
         logged_in = self.client.login(username=user.username,
                                       password=DEFAULT_TEST_DATA['password'])
@@ -407,6 +410,8 @@ class PositionTestCase(MoreAssertsTestCaseMixin, TestCase):
         seller = ShareholderGenerator().generate(company=operator.company)
         securities = TwoInitialSecuritiesGenerator().generate(
             company=operator.company)
+        position = PositionGenerator().generate(
+            seller=None, security=securities[1], buyer=seller)
 
         logged_in = self.client.login(username=user.username,
                                       password=DEFAULT_TEST_DATA['password'])
@@ -632,6 +637,8 @@ class PositionTestCase(MoreAssertsTestCaseMixin, TestCase):
 
         cs = CompanyShareholderGenerator().generate(
             security=sec1, company=operator.company)
+        position = PositionGenerator().generate(
+            seller=None, security=sec1, buyer=cs, count=1000000)
         buyer = ShareholderGenerator().generate(company=operator.company)
 
         logger.info('data preparation done.')
@@ -710,7 +717,7 @@ class PositionTestCase(MoreAssertsTestCaseMixin, TestCase):
 
         # call with perf check
         # was 55, increased to 95
-        with self.assertLessNumQueries(56):
+        with self.assertLessNumQueries(58):
             response = self.client.post(
                 u'/services/rest/position',
                 data,
@@ -753,18 +760,19 @@ class PositionTestCase(MoreAssertsTestCaseMixin, TestCase):
         shareholder cannot delete positions
         """
 
-        operator = ShareholderGenerator().generate()
-        user = operator.user
-        position = PositionGenerator().generate(company=operator.company)
+        shareholder = ShareholderGenerator().generate()
+        user = shareholder.user
+        position = PositionGenerator().generate(company=shareholder.company)
 
-        logged_in = self.client.login(username=user.username,
-                                      password=DEFAULT_TEST_DATA['password'])
-        self.assertTrue(logged_in)
+        self.client.force_login(user)
+        session = self.client.session
+        session['company_pk'] = shareholder.company.pk
+        session.save()
 
         res = self.client.delete(
             '/services/rest/position/{}'.format(position.pk))
 
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, 403)
 
     def test_delete_confirmed_position(self):
         """
@@ -897,7 +905,7 @@ class PositionTestCase(MoreAssertsTestCaseMixin, TestCase):
 
         query = position.buyer.user.first_name
         res = self.client.get(
-            '/services/rest/position?search={}'.format(query))
+            u'/services/rest/position?search={}'.format(query))
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data['count'], 1)
@@ -1009,6 +1017,9 @@ class ShareholderTestCase(TestCase):
 
         # get shareholder details
         token = user.auth_token
+        session = self.client.session
+        session['company_pk'] = operator.company.pk
+        session.save()
         response = self.client.get(
             '/services/rest/shareholders',
             **{'HTTP_AUTHORIZATION': 'Token {}'.format(token.key),
@@ -1378,6 +1389,9 @@ class ShareholderTestCase(TestCase):
                 OptionTransactionGenerator().generate(company=op.company))
 
         self.client.force_authenticate(user=op.user)
+        session = self.client.session
+        session['company_pk'] = op.company.pk
+        session.save()
         res = self.client.get(reverse(
             'shareholders-option-holder'), {'company': op.company.pk})
 
@@ -1404,6 +1418,9 @@ class ShareholderTestCase(TestCase):
                 OptionTransactionGenerator().generate(company=op.company))
 
         self.client.force_authenticate(user=op.user)
+        session = self.client.session
+        session['company_pk'] = op.company.pk
+        session.save()
         query = opts[0].buyer.user.first_name
         res = self.client.get(
             reverse('shareholders-option-holder'), {
@@ -1447,14 +1464,15 @@ class OptionTransactionTestCase(APITestCase):
         optiontransaction = OptionTransactionGenerator().generate(
             company=operator.company)
 
-        logged_in = self.client.login(username=user.username,
-                                      password=DEFAULT_TEST_DATA['password'])
-        self.assertTrue(logged_in)
+        self.client.force_login(user)
+        session = self.client.session
+        session['company_pk'] = operator.company.pk
+        session.save()
 
         res = self.client.delete(
             '/services/rest/optiontransaction/{}'.format(optiontransaction.pk))
 
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, 403)
 
     def test_delete_confirmed_optiontransaction(self):
         """
@@ -1637,6 +1655,9 @@ class SecurityTestCase(APITestCase):
         del data['face_value']  # mandatory, remove
 
         self.client.force_authenticate(user=operator.user)
+        session = self.client.session
+        session['company_pk'] = company.pk
+        session.save()
 
         res = self.client.put(url, data=data)
         self.assertIn('Vorzugsaktien', res.content)

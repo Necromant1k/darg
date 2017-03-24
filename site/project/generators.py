@@ -25,6 +25,7 @@ DEFAULT_TEST_DATA = {
     'password': u'testàäå',
     'username': u'testusernameàäå',
     'date': u'13. Mai 2016',  # datepicker format
+    'date_obj': datetime.date(2016, 5, 13),
     'title': u'2016 OptionsPlan àäå',
     'exercise_price': u'2.05',
     'share_count': u'156',
@@ -420,11 +421,13 @@ class ComplexShareholderConstellationGenerator(object):
             PositionGenerator().generate(
                 company=company,
                 seller=shareholders[-2],
-                security=s1).buyer)
+                security=s1, count=shareholders[-2].share_count()
+                ).buyer)
         shareholders.append(
             PositionGenerator().generate(
                 company=company,
                 seller=shareholders[-1],
+                count=shareholders[-1].share_count(),
                 security=s1).buyer)
 
         return shareholders, s1

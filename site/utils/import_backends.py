@@ -128,11 +128,12 @@ class SisWareImportBackend(BaseImportBackend):
                                                    2013, 9, 21),
                                                'depot_type': '1',
                                                'registration_type': '1',
-                                               'stock_book_id': '1913,001'
+                                               'stock_book_id': '1913,001',
+                                               'is_draft': False,
                                            }
                                            )
 
-        # and a matching operator?
+        # and a matching operator? take the first one we find inside db
         self.operator = self.company.operator_set.first()
         if not self.operator:
             logger.info('operator created')
@@ -308,6 +309,7 @@ class SisWareImportBackend(BaseImportBackend):
             'registration_type': registration_type,
             'stock_book_id': stock_book_id,
             'depot_type': depot_type,
+            'is_draft': False,
         }
         pkwargs = dict(bought_at=bought_at[0:10], seller=seller, buyer=buyer,
                        security=security, count=int(count))

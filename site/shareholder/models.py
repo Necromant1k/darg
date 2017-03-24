@@ -89,6 +89,28 @@ class Country(models.Model):
         ordering = ["name", "iso_code"]
 
 
+class Bank(models.Model):
+    """
+    list of all swiss banks
+    see https://goo.gl/i926Wr as guidance
+    """
+    short_name = models.CharField(max_length=15)
+    name = models.CharField(max_length=60)
+    postal_code = models.CharField(blank=True, max_length=10)
+    address = models.CharField(blank=True, max_length=35)
+    city = models.CharField(blank=True, max_length=35)
+    swift = models.CharField(max_length=14)
+    bcnr = models.CharField(max_length=5)
+    branchid = models.CharField(max_length=4)
+
+    class Meta:
+        verbose_name_plural = "Banks"
+        ordering = ["name"]
+
+    def __unicode__(self):
+        return u'{}({}, {})'.format(self.name, self.city, self.swift)
+
+
 def get_company_logo_upload_path(instance, filename):
     return os.path.join(
         "public", "company", "%d" % instance.id, "logo", filename)
@@ -422,7 +444,7 @@ class Company(models.Model):
             return
 
         kwargs = {'crop': 'center', 'quality': 99, 'format': "PNG"}
-        return get_thumbnail(self.logo.file, 'x40', **kwargs).url
+        return get_thumbnail(self.logo.file, 'x80', **kwargs).url
 
     # --- CHECKS
     def has_printed_certificates(self):
@@ -572,6 +594,7 @@ class UserProfile(models.Model):
 
     ip = models.GenericIPAddressField(blank=True, null=True)
     tnc_accepted = models.BooleanField(default=False)
+    is_multi_company_allowed = models.BooleanField(default=False)
 
     def __unicode__(self):
         return u"%s, %s %s" % (self.city, self.province,
@@ -1018,6 +1041,10 @@ class Shareholder(TagMixin, models.Model):
         # do the math
         total_votes_eligible = self.company.get_total_votes_eligible()
 
+        # no floating cap yet, hence cannot continue the math
+        if total_votes_eligible == 0:
+            return None
+
         # how much percent of these eligible votes does the shareholder have?
         return (self.vote_count(date) /
                 float(total_votes_eligible))
@@ -1028,6 +1055,10 @@ class Operator(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     company = models.ForeignKey('Company', verbose_name="Operators Company")
     share_count = models.PositiveIntegerField(blank=True, null=True)
+    last_active_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['company__name']
 
     def __unicode__(self):
         return u"{} {} ({})".format(

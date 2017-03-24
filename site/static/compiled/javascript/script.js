@@ -193,7 +193,7 @@
           return $scope.errors = null;
         }, function(rejection) {
           $scope.errors = rejection.data;
-          return Raven.captureMessage('form error: ' + rejection.statusText, {
+          return Raven.captureMessage('add operator form error: ' + rejection.statusText, {
             level: 'warning',
             extra: {
               rejection: rejection
@@ -232,7 +232,7 @@
         }, function(rejection) {
           $scope.company.founded_at = new Date($scope.company.founded_at);
           $scope.errors = rejection.data;
-          return Raven.captureMessage('form error: ' + rejection.statusText, {
+          return Raven.captureMessage('add corp form error: ' + rejection.statusText, {
             level: 'warning',
             extra: {
               rejection: rejection
@@ -577,7 +577,7 @@
           return $window.ga('send', 'event', 'form-send', 'add-optionplan');
         }, function(rejection) {
           $scope.errors = rejection.data;
-          Raven.captureMessage('form error: ' + rejection.statusText, {
+          Raven.captureMessage('add option plan form error: ' + rejection.statusText, {
             level: 'warning',
             extra: {
               rejection: rejection
@@ -611,7 +611,7 @@
           return $window.ga('send', 'event', 'form-send', 'add-option-transaction');
         }, function(rejection) {
           $scope.errors = rejection.data;
-          Raven.captureMessage('form error: ' + rejection.statusText, {
+          Raven.captureMessage('add option transaction form error: ' + rejection.statusText, {
             level: 'warning',
             extra: {
               rejection: rejection
@@ -701,8 +701,8 @@
         startingDay: 1,
         showWeeks: false
       };
-      $scope.open_datepicker = function() {
-        return $scope.datepicker.opened = true;
+      $scope.toggle_datepicker = function() {
+        return $scope.datepicker.opened = !$scope.datepicker.opened;
       };
       return $scope.goto_option = function(option_id) {
         return window.location = "/options/" + option_id + "/";
@@ -1051,7 +1051,7 @@
           return $scope.addPositionLoading = false;
         }, function(rejection) {
           $scope.errors = rejection.data;
-          Raven.captureMessage('form error: ' + rejection.statusText, {
+          Raven.captureMessage('add position form error: ' + rejection.statusText, {
             level: 'warning',
             extra: {
               rejection: rejection
@@ -1098,7 +1098,7 @@
           return $window.ga('send', 'event', 'form-send', 'add-split');
         }, function(rejection) {
           $scope.errors = rejection.data;
-          return Raven.captureMessage('form error: ' + rejection.statusText, {
+          return Raven.captureMessage('add split form error: ' + rejection.statusText, {
             level: 'warning',
             extra: {
               rejection: rejection
@@ -1171,8 +1171,8 @@
         startingDay: 1,
         showWeeks: false
       };
-      $scope.open_datepicker = function() {
-        return $scope.datepicker.opened = true;
+      $scope.toggle_datepicker = function() {
+        return $scope.datepicker.opened = !$scope.datepicker.opened;
       };
       return $scope.goto_position = function(position_id) {
         return window.location = "/positions/" + position_id + "/";
@@ -1303,8 +1303,8 @@
         startingDay: 1,
         showWeeks: false
       };
-      $scope.open_datepicker1 = function() {
-        return $scope.datepicker1.opened = true;
+      $scope.toggle_datepicker1 = function() {
+        return $scope.datepicker1.opened = !$scope.datepicker1.opened;
       };
       $scope.datepicker2 = {
         opened: false
@@ -1315,11 +1315,28 @@
         startingDay: 1,
         showWeeks: false
       };
-      return $scope.open_datepicker2 = function() {
-        return $scope.datepicker2.opened = true;
+      return $scope.toggle_datepicker2 = function() {
+        return $scope.datepicker2.opened = !$scope.datepicker2.opened;
       };
     }
   ]);
+
+}).call(this);
+
+(function() {
+  var app;
+
+  app = angular.module('js.darg.app.select_company', ['js.darg.api', 'pascalprecht.translate', 'ui.bootstrap']);
+
+  app.config([
+    '$translateProvider', function($translateProvider) {
+      $translateProvider.translations('de', django.catalog);
+      $translateProvider.preferredLanguage('de');
+      return $translateProvider.useSanitizeValueStrategy('escaped');
+    }
+  ]);
+
+  app.controller('SelectCompanyController', ['$scope', '$http', function($scope, $http) {}]);
 
 }).call(this);
 
@@ -1456,7 +1473,7 @@
           return $scope.errors = null;
         }, function(rejection) {
           $scope.errors = rejection.data;
-          return Raven.captureMessage('form error: ' + rejection.statusText, {
+          return Raven.captureMessage('edit shareholder form error: ' + rejection.statusText, {
             level: 'warning',
             extra: {
               rejection: rejection
@@ -1573,8 +1590,8 @@
         $scope.optionholder_next = null;
         return $scope.option_holders = [];
       };
-      $scope.load_option_holders = function(company_pk) {
-        return $http.get('/services/rest/shareholders/option_holder?company=' + company_pk).then(function(result) {
+      $scope.load_option_holders = function() {
+        return $http.get('/services/rest/shareholders/option_holder').then(function(result) {
           angular.forEach(result.data.results, function(item) {
             return $scope.option_holders.push(item);
           });
@@ -1613,21 +1630,20 @@
           }
         });
       };
-      $scope.load_all_shareholders();
-      $http.get('/services/rest/user').then(function(result) {
-        $scope.user = result.data.results[0];
-        angular.forEach($scope.user.operator_set, function(item, key) {
-          return $http.get(item.company).then(function(result1) {
-            $scope.user.operator_set[key].company = result1.data;
-            return $scope.load_option_holders(result1.data.pk);
+      $scope.load_user = function() {
+        return $http.get('/services/rest/user').then(function(result) {
+          $scope.loading = true;
+          $scope.user = result.data.results[0];
+          return $http.get($scope.user.selected_company).then(function(result1) {
+            return $scope.company = result1.data;
           });
+        })["finally"](function() {
+          return $scope.loading = false;
         });
-        if ($scope.user.operator_set.length > 0 && $scope.user.operator_set[0].company.pk) {
-          return $scope.load_option_holders($scope.user.operator_set[0].company.pk);
-        }
-      })["finally"](function() {
-        return $scope.loading = false;
-      });
+      };
+      $scope.load_all_shareholders();
+      $scope.load_option_holders();
+      $scope.load_user();
       $scope.$watchCollection('shareholders', function(shareholders) {
         $scope.total_shares = 0;
         return angular.forEach(shareholders, function(item) {
@@ -1783,7 +1799,7 @@
       $scope.optionholder_search = function() {
         var params, paramss;
         params = {};
-        params.company = $scope.user.operator_set[0].company.pk;
+        params.company = $scope.company;
         if ($scope.optionholder_search_params.query) {
           params.search = $scope.optionholder_search_params.query;
         }
@@ -1812,25 +1828,18 @@
         });
       };
       $scope.add_company = function() {
+        $scope.errors = null;
         return $scope.newCompany.$save().then(function(result) {
-          return $http.get('/services/rest/user').then(function(result) {
-            $scope.user = result.data.results[0];
-            return angular.forEach($scope.user.operator_set, function(item, key) {
-              return $http.get(item.company).then(function(result1) {
-                return $scope.user.operator_set[key].company = result1.data;
-              });
-            });
-          }).then(function() {
-            return $scope.load_all_shareholders();
-          });
+          $scope.load_user();
+          return $scope.load_all_shareholders();
         }).then(function() {
-          $scope.company = new Company();
+          $scope.newCompany = new Company();
           return $window.ga('send', 'event', 'form-send', 'add-company');
         }).then(function() {
           return $scope.errors = null;
         }, function(rejection) {
           $scope.errors = rejection.data;
-          return Raven.captureMessage('form error: ' + rejection.statusText, {
+          return Raven.captureMessage('add corp form error: ' + rejection.statusText, {
             level: 'warning',
             extra: {
               rejection: rejection
@@ -1839,11 +1848,13 @@
         });
       };
       $scope.add_shareholder = function() {
+        $scope.errors = null;
         return $scope.newShareholder.$save().then(function(result) {
           return $scope.shareholders.push(result);
         }).then(function() {
           $scope.newShareholder = new Shareholder();
           $scope.shareholder_added_success = true;
+          $scope.show_add_shareholder = false;
           return $timeout(function() {
             return $scope.shareholder_added_success = false;
           }, 30000);
@@ -1852,7 +1863,7 @@
           return $window.ga('send', 'event', 'form-send', 'add-shareholder');
         }, function(rejection) {
           $scope.errors = rejection.data;
-          return Raven.captureMessage('form error: ' + rejection.statusText, {
+          return Raven.captureMessage('add shareholder form error: ' + rejection.statusText, {
             level: 'warning',
             extra: {
               rejection: rejection
@@ -1878,8 +1889,9 @@
         startingDay: 1,
         showWeeks: false
       };
-      return $scope.open_datepicker = function() {
-        return $scope.datepicker.opened = true;
+      return $scope.toggle_datepicker = function() {
+        $scope.datepicker.opened = !$scope.datepicker.opened;
+        return false;
       };
     }
   ]);

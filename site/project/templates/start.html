@@ -10,7 +10,7 @@
 
 {% block content %}
 <div ng_controller="StartController">
-  <div id="add_company" class="add-company-container" ng-show="!user.operator_set.length && !loading">
+    <div id="add_company" class="add-company-container" ng-show="user.selected_company==null && !loading">
     {% include "_add_company_form.html" %}
   </div>
 
@@ -22,24 +22,23 @@
   </div>
 
   <!-- table per company -->
-  <div id="shareholder_list" ng-hide="!user.operator_set.length || loading" ng-repeat="operator in user.operator_set">
+  <div id="shareholder_list" ng-show="user.selected_company && !loading">
 
-    <h1>
+    <h1 class="captable-heading">
       {% endverbatim %}{% trans "Your Shareholders for" %}{% verbatim %}
-      {{ operator.company.name }}
-      <img ng-src="{{ operator.company.logo_url }}" alt="company logo" ng-show="operator.company.logo_url"class="logo" height="30pt"/>
-      <a href="{{ operator.company.profile_url }}" class="el-icon-cogs-wrapper btn-inline">
+      {{ company.name }}
+      <img ng-src="{{ company.logo_url }}" alt="company logo" ng-show="company.logo_url"class="logo" style="width: 40px"/>
+      <a href="{{ company.profile_url }}" class="el-icon-cogs-wrapper btn-inline">
         <span class="el-icon-cogs"></span>
       </a>
     </h1>
 
     <!-- ACTIONS -->
     <div class="panel" ng-hide="!user.operator_set.length">
-      <a class="btn-inline align-left" data-toggle="modal" data-target="#addShareholder" href="" ng-click="show_add_shareholder_form()">
+      <a class="btn btn-focus" data-toggle="modal" data-target="#addShareholder" href="" ng-click="show_add_shareholder_form()">
         {% endverbatim %}{% trans "Add Shareholder" %}{% verbatim %}
       </a>
     </div>
-
     <!-- Modal -->
     <div class="modal fade" id="addShareholder" tabindex="-1" role="dialog" aria-labelledby="addShareholderLabel">
       <div class="modal-dialog" role="document">
@@ -65,17 +64,28 @@
     </div>
 
 
+	<p class="panel" ng-show="shareholders.length < 10 ">
+	{% endverbatim %}
+	{% trans "Need more advices? Read" %}
+	<a href="/aktienbuch/quickstart/" title="{% trans "share register quickstart guide" %}" target="_blank">
+	  {% trans "our quickstart tutorial!" %}
+	</a>
+	{% verbatim %}
+	</p>
+
 	<!-- --- SHARES --- -->
-	<h2 ng-show="shareholders.length" >{% endverbatim %}{% trans "Share Ownership" %}{% verbatim %}</h2>
+	<h2 ng-show="shareholders.length > 1" >{% endverbatim %}{% trans "Share Ownership" %}{% verbatim %}</h2>
 
     <!-- TABLE ACTIONS -->
 	{% endverbatim %}
+	<div ng-hide="shareholders.length < 2">
 	{% include "_table_actions.html" %}
+	</div>
 	{% verbatim %}
 
     <!-- TABLE -->
-    <div class="table">
-      <div class="tr th">
+    <div class="table" ng-hide="shareholders.length < 2">
+      <div class="tr th hide-mobile">
         <div class="td td-width-2 ">{% endverbatim %}{% trans "Name" %}{% verbatim %}</div>
         <div class="td text-right-flex">{% endverbatim %}{% trans "Shareholder Number" %}{% verbatim %}</div>
         <div class="td text-right-flex">{% endverbatim %}{% trans "Shares (%%)" %}{% verbatim %}</div>
@@ -86,7 +96,7 @@
         <div class="td text-right-flex order-2 number">{{ shareholder.number }}</div>
         <div class="td text-right-flex order-4 gray-circle">
           <value class='transform-center' ng-if="shareholder.share_count != '-'">
-              {{ shareholder.share_count | number : 0}}
+              {{ shareholder.share_count | number }}
               <span class="shares-count" ng-hide="shareholder.is_company">
                   ({{shareholder.share_percent | number : 1}}%)
               </span>
@@ -100,7 +110,7 @@
           </value>
         </div>
         <div class="td summary text-right-flex">
-          {{ user.operator_set[0].company.share_count }}
+          {{ company.share_count | number }}
         </div>
       </div>
     </div><!-- /table-->
@@ -125,7 +135,7 @@
         <div class="td text-right-flex number order-2">{{ option_holder.number }}</div>
         <div class="td text-right-flex share shareholders-count gray-circle">
           <value class='transform-center' ng-if="option_holder.options_count != '-'">
-            {{ option_holder.options_count | number : 0}} ({{option_holder.options_percent | number : 1}}%)
+            {{ option_holder.options_count | number }} ({{option_holder.options_percent | number: 2}}%)
           </value>
         </div>
       </div>

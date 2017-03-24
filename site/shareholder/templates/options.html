@@ -13,8 +13,8 @@
   <h1>{% trans "Options" %}</h1>
 
   <div class="panel panel-column">
-    <a class="btn-inline align-left" href="" data-toggle="modal" data-target="#addOptionTransaction" ng-click="show_add_option_transaction_form()" ng-hide="!option_plans.length">{% trans "Transfer Option" %}</a>
-    <a class="btn-inline " href="" data-toggle="modal" data-target="#addOptionPlan" ng-click="show_add_option_plan_form()">{% trans "Grant New Option Plan" %}</a>
+    <a class="btn btn-focus" href="" data-toggle="modal" data-target="#addOptionTransaction" ng-click="show_add_option_transaction_form()" ng-hide="!option_plans.length">{% trans "Transfer Option" %}</a>
+    <a class="btn btn-focus" href="" data-toggle="modal" data-target="#addOptionPlan" ng-click="show_add_option_plan_form()">{% trans "Grant New Option Plan" %}</a>
   </div>
 
   <!-- MODAL OPTIONS TRANSACTION -->
@@ -78,7 +78,7 @@
     </h2>
 
     <div class="table">
-      <div class="tr th" ng-show="optiontransaction.option_plan.pk != optiontransactions[$index - 1].option_plan.pk">
+      <div class="tr th hide-mobile" ng-show="optiontransaction.option_plan.pk != optiontransactions[$index - 1].option_plan.pk">
         <div class="td">{% trans "Grant Date" %}</div>
         <div class="td td-width-2">{% trans "Receipient" %}</div>
         <div class="td text-right-flex" >
@@ -110,13 +110,13 @@
         </div>
         <div class="td text-right-flex count gray-circle" ng-click="goto_option(optiontransaction.pk)" ng-mouseover="">
           <span class="transform-center large">
-            {{ optiontransaction.count }}
+            {{ optiontransaction.count | number }}
           </span>
           <span class="note hide-mobile" ng-show="optiontransaction.option_plan.security.track_numbers && optiontransaction.readable_number_segments">
             (#{{ optiontransaction.readable_number_segments }})
           </span>
         </div>
-        <div class="td text-right-flex margin-top-additional" ng-click="goto_option(optiontransaction.pk)" ng-mouseover="">{{ optiontransaction.option_plan.exercise_price }}</div>
+        <div class="td text-right-flex margin-top-additional" ng-click="goto_option(optiontransaction.pk)" ng-mouseover="">{{ optiontransaction.option_plan.exercise_price | currency }}</div>
         <div class="td td-width-2" ng-click="goto_option(optiontransaction.pk)" ng-mouseover="">
           {{ optiontransaction.seller.full_name }}
         </div>

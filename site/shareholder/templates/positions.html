@@ -16,9 +16,9 @@
   </p>
 
   <div class="panel panel-column">
-    <a class="btn-inline align-left add-position" data-toggle="modal" data-target="#addPosition" href="" ng-click="show_add_position_form()">{% trans "Transfer Shares" %}</a>
-    <a class="btn-inline add-capital" href="" data-toggle="modal" data-target="#capitalForm" ng-click="show_add_capital_form()">{% trans "Increase Capital" %}</a>
-    <a class="btn-inline split-shares" href="" data-toggle="modal" data-target="#splitShares" ng-click="show_split_form()">{% trans "Split Shares" %}</a>
+    <a class="btn btn-focus add-position" data-toggle="modal" data-target="#addPosition" href="" ng-click="show_add_position_form()">{% trans "Transfer Shares" %}</a>
+    <a class="btn btn-focus add-capital" href="" data-toggle="modal" data-target="#capitalForm" ng-click="show_add_capital_form()">{% trans "Increase Capital" %}</a>
+    <a class="btn btn-focus split-shares" href="" data-toggle="modal" data-target="#splitShares" ng-click="show_split_form()">{% trans "Split Shares" %}</a>
   </div>
 
   <!-- MODAL ADD POSITION -->
@@ -96,7 +96,7 @@
   <div id="positions" ng-hide="!positions.length">
 
     <div class="table table-small-font table-centered-mobile">
-      <div class="tr th">
+      <div class="tr th hide-mobile">
         <div class="td">{% trans "Buy Date" %}</div>
         <div class="td td-width-2">{% trans "Buyer" %}</div>
         <div class="td">{% trans "Security" %}</div>
@@ -134,19 +134,19 @@
           </div>
           <div class="td td-width-2 order-2 buyer-name" ng-click="goto_position(position.pk)" ng-mouseover="">{{ position.buyer.full_name }}</div>
           <div class="td order-5 flex-column td-flex-inline" ng-click="goto_position(position.pk)" ng-mouseover="" >
-            <span class="custom-typeface-mobile hidden-md hidden-lg hidden-sm">{{ position.count }}</span>
+            <span class="custom-typeface-mobile hidden-md hidden-lg hidden-sm">{{ position.count | number }}</span>
             <span class="custom-typeface-mobile">{{ position.security.readable_title }}</span>
           </div>
           <div class="hide-mobile td text-right-flex count order-4 flex-column">
             <span class=" medium">
-              <span>{{ position.count }}</span>
+              <span>{{ position.count | number }}</span>
               <span class="note" ng-show="position.security.track_numbers && position.readable_number_segments">
                 (#{{ position.readable_number_segments }})
               </span>
             </span>
           </div>
           <div class="td text-right-flex order-3 td-flex-inline td-border-right flex-column" ng-click="goto_position(position.pk)" ng-mouseover="">
-            <b class="custom-typeface-mobile">{{ position.value }}</b>
+            <b class="custom-typeface-mobile">{{ position.value | currency }}</b>
             <span class="custom-typeface-mobile meta-mobile-only">CHF</span>
           </div>
           <div class="td hidden-xs" ng-click="goto_position(position.pk)" ng-mouseover="">

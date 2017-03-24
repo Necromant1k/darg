@@ -32,13 +32,15 @@
               <li {% ifequal request.path positions_url %}class="active"{% endifequal %}>
                 <a href="{{ positions_url }}">{% trans "Positions" %}</a>
               </li>
+              {% if request.user.operator_set.exists %}
               <li {% ifequal request.path options_url %}class="active"{% endifequal %}>
                 <a href="{{options_url}}">{% trans "Options" %}</a>
               </li>
               <li {% ifequal request.path reports_url %}class="active"{% endifequal %}>
                 <a href="{{reports_url}}">{% trans "Reports" %}</a>
               </li>
-              {% endif %}
+			  {% endif %}
+            {% endif %}
           </ul>
 
           <ul class="nav navbar-nav navbar-right top-separator">
@@ -64,6 +66,13 @@
                         <a href="/rosetta/" target="_blank">{% trans "I18N" %}</a>
                       </li>
                     {% endif %}
+					  {% if request.user.userprofile.is_multi_company_allowed %}
+                      <li>
+                        <a href="{% url "company_list" %}" title="{% trans "Select Company" %}" class="btn-inline">
+                          {% trans "Select Company" %}
+                        </a>
+                      </li>
+					  {% endif %}
                       <li>
                         <a href="{% url "auth_password_change" %}" title="{% trans "Reset password" %}" class="btn-inline">
                           {% trans "Change password" %}

@@ -190,8 +190,8 @@ class PositionTestCase(TransactionTestCase):
                 leftover += part
 
             print shareholder
-            print shareholder.buyer
-            print shareholder.seller
+            print shareholder.buyer.all()
+            print shareholder.seller.all()
             self.assertEqual(
                 shareholder.share_count(),
                 count2
@@ -248,15 +248,15 @@ class PositionTestCase(TransactionTestCase):
         company.split_shares(data)
 
         # asserts by checking overall shareholder situation
-        # means each shareholder should have now more shares but some
+        # means each shareholder should have now more shares but same
         # overall stock value
 
         leftover = 0
         shareholders.reverse()
         for shareholder in shareholders:
             if shareholder == shareholders[-1]:
-                pt, count2 = math.modf(assets[shareholder.pk]['count'] *
-                                       multiplier)
+                part, count2 = math.modf(assets[shareholder.pk]['count'] *
+                                         multiplier)
                 count2 += round(leftover)
             else:
                 part, count2 = math.modf(
