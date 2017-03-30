@@ -10,7 +10,7 @@
 
 {% block content %}
 <div ng_controller="StartController">
-    <div id="add_company" class="add-company-container" ng-show="!user.operator_set.length && !loading">
+    <div id="add_company" class="add-company-container" ng-show="user.selected_company==null && !loading"> <!-- ng-show  ISSUE/150 bracnh -->
     {% include "_add_company_form.html" %}
   </div>
 
@@ -22,7 +22,7 @@
   </div>
 
   <!-- table per company -->
-  <div id="shareholder_list" ng-hide="!user.operator_set.length || loading" ng-repeat="operator in user.operator_set">
+  <div id="shareholder_list" ng-show="user.selected_company && !loading"> <!-- ng-show  ISSUE/150 bracnh -->
 
     <h1 class="captable-heading">
       {% endverbatim %}{% trans "Your Shareholders for" %}{% verbatim %}
@@ -34,7 +34,7 @@
     </h1>
 
     <!-- ACTIONS -->
-    <div class="panel" ng-hide="!user.operator_set.length">
+    <div class="panel" ng-hide="show_add_shareholder">
       <a class="btn btn-focus" data-toggle="modal" data-target="#addShareholder" href="" ng-click="show_add_shareholder_form()">
         {% endverbatim %}{% trans "Add Shareholder" %}{% verbatim %}
       </a>
